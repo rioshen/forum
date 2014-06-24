@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright © 2014
  * Rio Shen <rioxshen@gmail.com>
  *
@@ -21,22 +21,25 @@
  */
 
 #include <stdio.h>
-#include "../lib/sqlite3.h"
+#include <assert.h>
 
 #include "util.h"
+#include "../lib/sqlite3.h"
 
 #define DB_NAME "forum.db"
 
 #define ACCOUNT_TABLE "ACCOUNT"
-#define CREATE_ACCOUNT_STMT  "ID     INT PRIMARY KEY NOT NULL," \
-                             "NAME   TEXT            NOT NULL," \
-                             "PASSWD TEXT            NOT NULL"
-
+#define CREATE_ACCOUNT_STMT  "id       INTEGER PRIMARY KEY AUTOINCREMENT," \
+                             "name     TEXT              NOT NULL," \
+                             "password TEXT            NOT NULL"
+#define ADD_ACCOUNT_STMT "INSERT INTO ACCOUNT (name, password) VALUES ('%s', '%s');"
+#define QUERY_ACCOUNT_STMT "SELECT * FROM "
 
 #define POST_TABLE "POST"
-#define CREATE_POST_STMT  "ID     INT PRIMARY KEY NOT NULL," \
-                          "NAME   TEXT            NOT NULL," \
-                          "POST   TEXT            NOT NULL"
+#define CREATE_POST_STMT  "id     INTEGER PRIMARY KEY AUTOINCREMENT," \
+                          "name   TEXT            NOT NULL," \
+                          "post   TEXT            NOT NULL"
+#define ADD_POST_STMT "INSERT INTO POST (name, post) VALUES ('%s', '%s');"
 
 /**
  * Creates a new table if it doesn't exit yet.
@@ -46,7 +49,7 @@
 static int create_table(char *db_name, char *table, char *sql_stmt) {
     int rc = FORUM_OK;
     char *sql = NULL;
-    char *zErrMsg = NULL;
+    char *err_msg = NULL;
     sqlite3 *database = NULL;
 
     /* Open database */
@@ -58,22 +61,21 @@ static int create_table(char *db_name, char *table, char *sql_stmt) {
     /* Create a table if it doesn't exist. To protect SQL injection, use
      * built-in sqlite3_mprintf which needs to free memory after using. */
     sql = sqlite3_mprintf("CREATE TABLE IF NOT EXISTS %s(%s);", table, sql_stmt);
-    if ((rc = sqlite3_exec(database, sql, NULL, NULL, &zErrMsg)) != SQLITE_OK) {
-        fprintf(stderr, "Create table error: %s\n", zErrMsg);
-        fprintf(stderr, "Error no is %d\n", rc);
-        sqlite3_free(zErrMsg);
+    if ((rc = sqlite3_exec(database, sql, NULL, NULL, &err_msg)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Create table error: %s\n", rc, err_msg);
+        sqlite3_free(err_msg);
         sqlite3_free(sql);
         (void)sqlite3_close(database);
 
         return rc;
     }
 
-    sqlite3_free(zErrMsg);
+    sqlite3_free(err_msg);
     sqlite3_free(sql);
 
     /* Close the database */
     if ((rc = sqlite3_close(database)) != SQLITE_OK) {
-        fprintf(stderr, "Failed to close %s", db_name);
+        fprintf(stderr, "[%d]: Failed to close %s", rc, db_name);
         return rc;
     }
 
@@ -98,10 +100,136 @@ int init_database(void) {
     return FORUM_OK;
 }
 
-static int add_value(char *db_name, )
+/**
+ * Inserts a new entry into the specified table.
+ * Returns sqlite3 error code - in event of failed
+ * Returns FORUM_OK - success
+ */
+static int add_value(char *db_name, char *sql_stmt) {
+    char *err_msg = NULL;
+    sqlite3 *database = NULL;
+    int rc = SQLITE_OK;
+
+    assert(db_name != NULL);
+    assert(sql_stmt != NULL);
+
+    /* Open database */
+    if ((rc = sqlite3_open(db_name, &database)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Can't open database: %s\n", rc, sqlite3_errmsg(database));
+        return rc;
+    }
+
+    /* Exectue sql statement */
+    if ((rc = sqlite3_exec(database, sql_stmt, NULL, NULL, &err_msg)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Failed to insert an entry: %s\n", rc, err_msg);
+        sqlite3_free(err_msg);
+        (void)sqlite3_close(database);
+
+        return rc;
+    }
+
+    sqlite3_free(err_msg);
+
+    /* Close the database */
+    if ((rc = sqlite3_close(database)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Failed to close %s", rc, db_name);
+        return rc;
+    }
+
+    return FORUM_OK;
+}
+
+int add_account(char *name, char *password) {
+    int ret = FORUM_OK;
+    char *sql = NULL;
+
+    assert(name != NULL);
+    assert(password != NULL);
+
+    sql = sqlite3_mprintf(ADD_ACCOUNT_STMT, name, password);
+    ret = add_value(DB_NAME, sql);
+    if (ret != FORUM_OK) {
+        fprintf(stderr, "Failed to add user account into database.");
+    }
+    sqlite3_free(sql);
+
+    return ret;
+}
+
+int add_post(char *name, char *content) {
+    int ret = FORUM_OK;
+    char *sql = NULL;
+
+    assert(name != NULL);
+    assert(content != NULL);
+
+    sql = sqlite3_mprintf(ADD_POST_STMT, name, content);
+    ret = add_value(DB_NAME, sql);
+    if (ret != FORUM_OK) {
+        fprintf(stderr, "Failed to add post into database.");
+    }
+    sqlite3_free(sql);
+
+    return ret;
+}
+
+/**
+ * Fetch entry from specified table.
+ * Returns sqlite3 error codes - in event of fail.
+ * Returns FORUM_OK - sucess
+ */
+static int query(char *db_name, char *sql_stmt, char *result) {
+    char *err_msg = NULL;
+    sqlite3 *database = NULL;
+    int rc = SQLITE_OK;
+
+    assert(db_name != NULL);
+    assert(sql_stmt != NULL);
+    assert(result != NULL);
+
+    /* Open database */
+    if ((rc = sqlite3_open(db_name, &database)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Can't open database: %s\n", rc, sqlite3_errmsg(database));
+        return rc;
+    }
+
+    /* Exectue sql statement */
+    if ((rc = sqlite3_exec(database, sql_stmt, NULL, (void *)result, &err_msg)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Failed to retrieval an entry: %s\n", rc, err_msg);
+        sqlite3_free(err_msg);
+        (void)sqlite3_close(database);
+
+        return rc;
+    }
+
+    printf("query %s\n", result);
+
+    sqlite3_free(err_msg);
+
+    /* Close the database */
+    if ((rc = sqlite3_close(database)) != SQLITE_OK) {
+        fprintf(stderr, "[%d]: Failed to close %s", rc, db_name);
+        return rc;
+    }
+
+    return FORUM_OK;
+}
+
+int authentication(char *username, char *password) {
+    char *sql = NULL;
+    int rc = SQLITE_OK;
+
+    assert(username != NULL);
+    assert(password != NULL);
+
+    sql = sqlite3_mprintf(ADD_POST_STMT, name, content);
+
+}
 
 int main() {
     (void)init_database();
+    (void)add_account("admin", "admin");
+    (void)add_post("admin", "This is a test");
 }
 
 /**
