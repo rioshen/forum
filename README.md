@@ -1,7 +1,9 @@
 A Secure Forum
 ===============
 
-This is a secure forum, I implement it in Python and Flask. That's enough for a project.
+This is a secure project of my _Application Security_ course.
 
-##Installation
-##Requirement
+###Introduction
+This project is implemented in `C`, in order to improve my secure design mindsets.
+
+###

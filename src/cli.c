@@ -1,3 +1,25 @@
+/**
+ * Copyright © 2014
+ * Rio Shen <rioxshen@gmail.com>
+ *
+ * Licensed under the GNU General Public License Version 2
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ * or write to the Free Software Foundation, Inc., 51 Franklin St
+ * Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 #include "cli.h"
 #include "util.h"
 
@@ -5,32 +27,4 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define COMMAND_LEN     1024
-#define EXIT_CMD_LEN    4
 
-void repl() {
-    int ret = 0;
-    char command[COMMAND_LEN] = {0};
-
-    while (1) {
-        printf("forum:> ");
-
-        if (fgets(command, COMMAND_LEN, stdin) == NULL) {
-            fprintf(stderr, "Invalid command.\n");
-            exit(1);
-        }
-
-        if (strncmp(command, "exit", strlen("exit")) == 0) {
-            exit(1);
-        }
-
-        if (strncmp(command, "login", strlen("login")) == 0) {
-            printf("forum:> password: ");
-            if (fgets(command, COMMAND_LEN, stdin) != NULL) {
-                ret =
-            }
-        }
-    }
-
-    return;
-}
