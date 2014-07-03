@@ -40,7 +40,6 @@ int main(int argc, char *argv[])
 
     while(consocket)
     {
-        printf("Incoming connection from %s - sending welcome\n", inet_ntoa(dest.sin_addr));
         send(consocket, msg, strlen(msg), 0);
         consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
     }

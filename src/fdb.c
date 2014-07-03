@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright © 2014
  * Rio Shen <rioxshen@gmail.com>
  *

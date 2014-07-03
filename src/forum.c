@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright © 2014
  * Rio Shen <rioxshen@gmail.com>
  *
@@ -47,7 +47,6 @@ struct {
 bool is_auth = false;
 char g_user_name[USER_NAME_LEN + 1] = {0};
 char g_password[PASSWROD_LEN + 1] = {0};
-
 
 static bool is_auth(void) {
     return is_auth;
