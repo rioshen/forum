@@ -26,17 +26,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef struct {
-    char *title;
-    char *content;
-    char *author;
-}post;
-
-struct {
-    char *username;
-    char *password;
-}account;
+#include <syslog.h>
+#include<sys/socket.h>
+#include<arpa/inet.h>
 
 #define COMMAND_LEN     1024
 #define USER_NAME_LEN   1024
@@ -44,62 +36,12 @@ struct {
 #define POST_MAX_LEN    1024
 #define EXIT_CMD_LEN    4
 
-bool is_auth = false;
+int is_auth = 0;
+int g_sockfd = 0;
 char g_user_name[USER_NAME_LEN + 1] = {0};
-char g_password[PASSWROD_LEN + 1] = {0};
+char g_password[PASSWORD_LEN + 1] = {0};
 
-static bool is_auth(void) {
-    return is_auth;
-}
-
-static int show_post(void) {
-    char *post[POST_MAX_LEN + 1] = {0};
-
-    if (!is_auth()) {
-        fprintf(stderr, "Please login first. To do this, type login.\n");
-        return FORUM_ERR;
-    }
-
-
-    if ((post = retrive_post(g_user_name)) == NULL) {
-        return FORUM_ERR:
-    }
-
-    printf("Post by %s:> \n", g_user_name);
-    printf("%s\n", post);
-    printf("forum:>");
-
-    return FORUM_OK;
-
-}
-
-static int create_post(void) {
-    return FORUM_OK;
-}
-
-static int auth_cli(void) {
-
-    struct account *user = NULL;
-
-    printf("username:> ");
-    if (fgets(g_user_name, USER_NAME_LEN, stdin) == NULL) {
-        return FORUM_ERR;
-    }
-
-    printf("password:> ");
-    if (fgets(g_password, PASSWORD_LEN, stdin) == NULL) {
-        return FORUM_ERR;
-    }
-
-    if (auth(g_user_name, g_password) != FORUM_OK) {
-        return FORUM_ERR;
-    }
-    is_auth = true;
-
-    return FORUM_OK;
-}
-
-void repl(void) {
+void repl() {
     int ret = 0;
     char command[COMMAND_LEN] = {0};
 
@@ -116,21 +58,15 @@ void repl(void) {
         }
 
         if (strncmp(command, "login", strlen("login")) == 0) {
-            if (aut_cli() != FORUM_OK) {
-                printf("forum:> Authentication failed.\n");
-            }
+            exit(1);
         }
 
-        if (strncmp(command, "post", strlen("post")) != NULL) {
-            if (create_post() != FORUM_OK) {
-                printf("forum:> Failed to create a new post.\n");
-            }
+        if (strncmp(command, "post", strlen("post")) == 0) {
+            exit(1);
         }
 
-        if (strncmp(command, "show", strlen("show") != NULL)) {
-            if (show_post() != FORUM_OK) {
-                printf("forum:> Failed to find a specific post.\n");
-            }
+        if (strncmp(command, "show", strlen("show")) == 0) {
+            exit(1);
         }
 
     }
@@ -146,25 +82,78 @@ void usage(void) {
 }
 
 int main(int argc, char**argv) {
-    char *ptr = NULL;
-    long port = 0;
+    int sock;
+    struct sockaddr_in server;
+    char command[COMMAND_LEN + 1]  = {0};
+    char server_reply[2000] = {0};
 
     if (argc >= 2) {
         if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
             usage();
         }
-        if (strcmp(argv[1], "--port") == 0 && argc == 3) {
-            if (strlen(argv[2]) > 5) {
-                fprintf(stderr, "Invalid port number.\n");
-                exit(1);
-            } else {
-                port = strtol(argv[2], &ptr, 10);
-                printf("Port number is %d\n", port);
-            }
-        }
     }
 
-    repl();
+    if ((sock = socket(AF_INET , SOCK_STREAM , 0)) < 0) {
+        fprintf(stderr, "Failed to creak socket.");
+        exit(-1);
+    }
+
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+    server.sin_family = AF_INET;
+    server.sin_port = htons(5001);
+    if ((connect(sock , (struct sockaddr *)&server , sizeof(server))) < 0) {
+        fprintf(stderr, "Failed to connect to server.");
+        exit(-1);
+    }
+
+    openlog("Forum Client", 0, LOG_LOCAL0);
+    syslog(LOG_INFO, "%s", "Initialization success.");
+
+    while (1) {
+        printf("forum:> ");
+        if (fgets(command, COMMAND_LEN, stdin) == NULL) {
+            fprintf(stderr, "Invalid command.\n");
+            exit(1);
+        }
+
+        if (strncmp(command, "login", strlen("login")) == 0) {
+            printf("username:> ");
+
+            (void)fgets(g_user_name, USER_NAME_LEN, stdin);
+            if ((send(sock, g_user_name, strlen(g_user_name), 0)) < 0) {
+                fprintf(stderr, "Failed to send user name.");
+                exit(-1);
+            }
+
+            char message[strlen(AUTH_SUCCESS)] = {0};
+            if ((recv(sock, message, strlen(AUTH_SUCCESS), 0)) < 0) {
+                fprintf(stderr, "Failed to get response.");
+                exit(-1);
+            }
+            printf("%s\n", message);
+            if (strncmp(message, AUTH_SUCCESS, strlen(AUTH_SUCCESS)) != 0) {
+                fprintf(stderr, "Use name does not exit.");
+                break;
+            }
+
+            printf("password:> ");
+            (void)fgets(g_password, PASSWORD_LEN, stdin);
+            if ((send(sock, g_password, strlen(g_password), 0)) < 0) {
+                fprintf(stderr, "Failed to send user name.");
+                exit(-1);
+            }
+            memset(message, 0, strlen(message));
+            if ((recv(sock, message, strlen(AUTH_SUCCESS), 0)) < 0) {
+                fprintf(stderr, "Failed to get response.");
+                exit(-1);
+            }
+            if (strncmp(message, AUTH_SUCCESS, strlen(AUTH_SUCCESS)) != 0) {
+                fprintf(stderr, "Use name does not exit.");
+                break;
+            }
+        }
+
+    }
 
     return 0;
 }
