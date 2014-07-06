@@ -2,5 +2,6 @@
 #define __FDB_H
 
 int init_database(void);
+int authentication(char *username, char *password);
 
-#endif
+#endif /* __FDB_H */

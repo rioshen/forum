@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
+#include "util.h"
 #include "server.h"
 #include "fdb.h"
 
@@ -16,17 +17,20 @@
  * This will handle connection for each client
  * */
 void *connection_handler(void *socket_desc) {
+    int read_size = 0;
     int sock = *(int*)socket_desc;
-    int read_size;
-    char *message , client_message[2000];
+    char *message = NULL;
+    char client_message[2000];
 
-    //Receive a message from client
     while ( (read_size = recv(sock , client_message , 2000 , 0)) > 0 ) {
         printf("Receive message %s\n", client_message);
 
         if (strncmp(client_message, "admin", strlen("admin")) == 0) {
-
-            write(sock, "AUTH SUCCESS", strlen("AUTH_SUCCESS"));
+            if (authentication("admin", "admin") == FORUM_OK) {
+                write(sock, "AUTH SUCCESS", strlen("AUTH_SUCCESS"));
+            } else {
+                write(sock, "AUTH FAILED", strlen("AUTH_FAILED"));
+            }
         }
     }
 

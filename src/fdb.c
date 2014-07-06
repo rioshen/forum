@@ -33,7 +33,7 @@
                              "name     TEXT              NOT NULL," \
                              "password TEXT            NOT NULL"
 #define ADD_ACCOUNT_STMT "INSERT INTO ACCOUNT (name, password) VALUES ('%s', '%s');"
-#define QUERY_ACCOUNT_STMT "SELECT * FROM "
+#define QUERY_ACCOUNT_STMT "SELECT * FROM ACCOUNT WHERE name = '%s' and password = '%s';"
 
 #define POST_TABLE "POST"
 #define CREATE_POST_STMT  "id     INTEGER PRIMARY KEY AUTOINCREMENT," \
@@ -173,19 +173,38 @@ int add_post(char *name, char *content) {
     return ret;
 }
 
+int is_valid = 0;
+
+static int query_callback(void *data, int argc, char **argv, char **azColName) {
+    is_valid = 1;
+    return 0;
+}
+
+static int test_query_callback(void *data, int argc, char **argv, char **azColName){
+    int i;
+    fprintf(stderr, "%s: ", (const char*)data);
+    for(i=0; i<argc; i++){
+        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+
+   return -1;
+}
+
 /**
  * Fetch entry from specified table.
  * Returns sqlite3 error codes - in event of fail.
  * Returns FORUM_OK - sucess
  */
-static int query(char *db_name, char *sql_stmt, char *result) {
+static int query(char *db_name, char *sql_stmt) {
     char *err_msg = NULL;
     sqlite3 *database = NULL;
     int rc = SQLITE_OK;
+    const char* data = "Callback function called";
 
     assert(db_name != NULL);
     assert(sql_stmt != NULL);
-    assert(result != NULL);
+
 
     /* Open database */
     if ((rc = sqlite3_open(db_name, &database)) != SQLITE_OK) {
@@ -194,15 +213,13 @@ static int query(char *db_name, char *sql_stmt, char *result) {
     }
 
     /* Exectue sql statement */
-    if ((rc = sqlite3_exec(database, sql_stmt, NULL, (void *)result, &err_msg)) != SQLITE_OK) {
+    if ((rc = sqlite3_exec(database, sql_stmt, query_callback, (void *)data, &err_msg)) != SQLITE_OK) {
         fprintf(stderr, "[%d]: Failed to retrieval an entry: %s\n", rc, err_msg);
         sqlite3_free(err_msg);
         (void)sqlite3_close(database);
 
         return rc;
     }
-
-    printf("query %s\n", result);
 
     sqlite3_free(err_msg);
 
@@ -216,18 +233,21 @@ static int query(char *db_name, char *sql_stmt, char *result) {
 }
 
 int authentication(char *username, char *password) {
-    char *sql = NULL;
     int rc = SQLITE_OK;
+    char *sql = NULL;
 
     assert(username != NULL);
     assert(password != NULL);
 
-    sql = sqlite3_mprintf(ADD_POST_STMT, name, content);
+    sql = sqlite3_mprintf(QUERY_ACCOUNT_STMT, username, password);
+    if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
+        fprintf(stderr, "[%d]: Failed to query", rc);
+        return FORUM_ERR;
+    }
 
-}
-
-int main() {
-    (void)init_database();
-    (void)add_account("admin", "admin");
-    (void)add_post("admin", "This is a test");
+    if (is_valid != 1) {
+        return FORUM_ERR;
+    } else {
+        return FORUM_OK;
+    }
 }
