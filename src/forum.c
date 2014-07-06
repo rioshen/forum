@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <syslog.h>
 #include <stddef.h>
 #include <sys/socket.h>
@@ -48,6 +49,28 @@ void usage(void) {
     fprintf(stderr, "       ./forum-server -h or --help\n");
     fprintf(stderr, "       ./forum_server --port 777\n");
     exit(1);
+}
+
+/**
+ * To avoid SQL injection, input data could only contain digit or alphabetic.
+ */
+static int input_validation(const char *data) {
+    int i = 0;
+
+    if (data == NULL) {
+        return FORUM_ERR;
+    }
+
+    int length = strnlen(data, COMMAND_LEN);
+    for (i = 0; i < length; i++) {
+        if (isdigit((int)data[i]) || isalpha((int)data[i]) || data[i] == ' ') {
+            continue;
+        } else {
+            return FORUM_ERR;
+        }
+    }
+
+    return FORUM_OK;
 }
 
 int message_handler(int sock, char *cmd, char *field1, char *field2) {
@@ -84,7 +107,6 @@ int main(int argc, char**argv) {
     int sock;
     struct sockaddr_in server;
     char command[COMMAND_LEN + 1]  = {0};
-
     struct Action action;
     char message[sizeof(action)];
 
@@ -127,10 +149,14 @@ int main(int argc, char**argv) {
 
             printf("username:> ");
             if (fgets(user_name, USER_NAME_LEN, stdin) == NULL) {
-                fprintf(stderr, "Failed to get user name.");
+                fprintf(stderr, "Failed to get user name.\n");
                 continue;
             }
             user_name[strlen(user_name) - 1] = '\0';
+            if (input_validation(user_name) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
 
             printf("password:> ");
             if (fgets(password, PASSWORD_LEN, stdin) == NULL) {
@@ -138,6 +164,10 @@ int main(int argc, char**argv) {
                 continue;
             }
             password[strlen(password) - 1] = '\0';
+            if (input_validation(password) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
 
             if ((message_handler(sock, CMD_LOGIN, user_name, password)) != FORUM_OK) {
                 fprintf(stderr, "User name or password is wrong.\n");
@@ -163,6 +193,10 @@ int main(int argc, char**argv) {
                 continue;
             }
             title[strnlen(title, TITTLE_LEN) - 1] = '\0';
+            if (input_validation(title) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
 
             printf("content:> ");
             if (fgets(content, POST_MAX_LEN, stdin) == NULL) {
@@ -170,6 +204,10 @@ int main(int argc, char**argv) {
                 continue;
             }
             content[strnlen(content, POST_MAX_LEN) - 1] = '\0';
+            if (input_validation(content) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
 
             if ((message_handler(sock, CMD_ADDPOST, title, content)) != FORUM_OK) {
                 fprintf(stderr, "Failed to add post entry.\n");
@@ -204,7 +242,12 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Empty command.");
                 continue;
             }
-            command[strnlen(command, COMMAND_LEN)] = '\0';
+            command[strnlen(command, COMMAND_LEN) - 1] = '\0';
+            if (input_validation(command) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
+
             memset(&action, 0, sizeof(action));
             strncpy(action.cmd, CMD_SHOW_POST, strlen(CMD_SHOW_POST));
             strncpy(action.field1, command, strnlen(command, COMMAND_LEN));

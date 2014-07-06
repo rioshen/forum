@@ -14,13 +14,13 @@
 #include "server.h"
 #include "fdb.h"
 
-/*
+
+/**
  * This will handle connection for each client
- * */
+ */
 void *connection_handler(void *socket_desc) {
     int read_size = 0;
     int sock = *(int*)socket_desc;
-    char *message = NULL;
     char client_message[CLIENT_MSG_LEN + 1];
 
     while ( (read_size = recv(sock , client_message , CLIENT_MSG_LEN , 0)) > 0 ) {
@@ -31,13 +31,16 @@ void *connection_handler(void *socket_desc) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
                 continue;
             }
-
             if (authentication(action->field1, action->field2) == FORUM_OK) {
                 send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
             } else {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
             }
         } else if ((strncmp(action->cmd, CMD_ADDPOST, strlen(CMD_ADDPOST))) == 0) {
+            if (action->field1 == NULL || action->field2 == NULL) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+                continue;
+            }
             if (add_post(action->field1, action->field2) == FORUM_OK) {
                 send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
             } else {
@@ -91,30 +94,25 @@ int main(int argc , char *argv[]) {
     server.sin_port = htons(PORTNUM);
 
     //Bind
-    if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0) {
+    if (bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0) {
         puts("bind failed");
         return 1;
     }
-    puts("bind done");
 
     //Listen
     listen(socket_desc , 3);
 
     //Accept and incoming connection
-    puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
-    while( (new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) ) {
-        puts("Connection accepted");
-
+    while ((new_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c))) {
         pthread_t sniffer_thread;
         new_sock = malloc(1);
         *new_sock = new_socket;
 
-        if( pthread_create( &sniffer_thread , NULL ,  connection_handler , (void*) new_sock) < 0) {
+        if (pthread_create( &sniffer_thread , NULL ,  connection_handler , (void*) new_sock) < 0) {
             perror("could not create thread");
             return 1;
         }
-        puts("Handler assigned");
     }
 
     if (new_socket < 0) {

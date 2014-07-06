@@ -50,7 +50,7 @@ char g_buffer[MAX_BUFF_LEN + 1] = {0};
 /**
  * Creates a new table if it doesn't exit yet.
  * Returns sqlite3 error codes - in event of fail.
- * Returns FORUM_OK - sucess
+ * Returns FORUM_OK - success
  */
 static int create_table(char *db_name, char *table, char *sql_stmt) {
     int rc = FORUM_OK;
@@ -202,21 +202,10 @@ static int query_callback(void *data, int argc, char **argv, char **azColName) {
     return 0;
 }
 
-static int test_query_callback(void *data, int argc, char **argv, char **azColName){
-    int i;
-    fprintf(stderr, "%s: ", (const char*)data);
-    for(i=0; i<argc; i++){
-        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    }
-    printf("\n");
-
-   return -1;
-}
-
 /**
  * Fetch entry from specified table.
  * Returns sqlite3 error codes - in event of fail.
- * Returns FORUM_OK - sucess
+ * Returns FORUM_OK - success
  */
 static int query(char *db_name, char *sql_stmt) {
     char *err_msg = NULL;
@@ -234,7 +223,7 @@ static int query(char *db_name, char *sql_stmt) {
         return rc;
     }
 
-    /* Exectue sql statement */
+    /* Execute sql statement */
     if ((rc = sqlite3_exec(database, sql_stmt, query_callback, (void *)data, &err_msg)) != SQLITE_OK) {
         fprintf(stderr, "[%d]: Failed to retrieval an entry: %s\n", rc, err_msg);
         sqlite3_free(err_msg);
@@ -266,8 +255,7 @@ void get_post(char *buff) {
         return;
     }
 
-    strncpy(buff, g_buffer, 1025);
-
+    strncpy(buff, g_buffer, MAX_BUFF_LEN);
     memset(g_buffer, 0, sizeof(g_buffer));
 
     return;
