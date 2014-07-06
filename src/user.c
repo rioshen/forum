@@ -1,6 +1,0 @@
-
-
-bool authentication(void) {
-
-}
-

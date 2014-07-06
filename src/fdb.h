@@ -3,5 +3,5 @@
 
 int init_database(void);
 int authentication(char *username, char *password);
-
+int add_post(char *name, char *content);
 #endif /* __FDB_H */

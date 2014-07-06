@@ -40,6 +40,8 @@
                           "name   TEXT            NOT NULL," \
                           "post   TEXT            NOT NULL"
 #define ADD_POST_STMT "INSERT INTO POST (name, post) VALUES ('%s', '%s');"
+#define QUERY_POST_LIST "SELECT id, name FROM POST;"
+#define QUERY_POST_ENTRY "SELECT post FROM POST WHERE id = '%s';"
 
 /**
  * Creates a new table if it doesn't exit yet.
@@ -174,9 +176,32 @@ int add_post(char *name, char *content) {
 }
 
 int is_valid = 0;
+int g_status = 0;
+char menu[1024 + 1] = {0};
 
 static int query_callback(void *data, int argc, char **argv, char **azColName) {
-    is_valid = 1;
+    int i;
+    char buffer[100];
+
+    if (g_status == 1) {
+        is_valid = 1;
+    } else if (g_status == 2) {
+        for(i = 0; i + 1 < argc; i = i + 2){
+            snprintf(buffer, sizeof(buffer), "%s: %s\n", argv[i], argv[i + 1]);
+            if (strlen(menu) == 0) {
+                strcpy(menu, buffer);
+            } else {
+                strcat(menu, buffer);
+            }
+        }
+    } else if (g_status == 3) {
+        memset(menu, 0, sizeof(menu));
+        strcpy(menu, argv[0]);
+    }
+    printf("argc is %d\n", argc);
+    printf("argv is %s\n", argv[0]);
+    printf("Callback: %s", menu);
+
     return 0;
 }
 
@@ -232,12 +257,61 @@ static int query(char *db_name, char *sql_stmt) {
     return FORUM_OK;
 }
 
+void get_post(char *buff) {
+    int rc = SQLITE_OK;
+    char *sql = NULL;
+
+    g_status = 2;
+
+    printf("Runs in get_post method");
+
+    sql = sqlite3_mprintf(QUERY_POST_LIST);
+    if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
+        fprintf(stderr, "[%d]: Failed to query", rc);
+        return;
+    }
+    printf("Start to print\n %s", menu);
+
+    strncpy(buff, menu, 1025);
+
+    memset(menu, 0, sizeof(menu));
+
+    return;
+}
+
+void show_post(char *id, char *buffer) {
+    int rc = SQLITE_OK;
+    char *sql = NULL;
+
+    g_status = 3;
+
+    sql = sqlite3_mprintf(QUERY_POST_ENTRY, id);
+    if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
+        fprintf(stderr, "[%d]: Failed to query", rc);
+        return;
+    }
+    printf("SQL is %s\n", sql);
+
+    if (strlen(menu) == 0) {
+        strcpy(buffer, "Invalid id number");
+    } else {
+        strncpy(buffer, menu, 1025);
+    }
+    printf("Result is %s", buffer);
+
+    memset(menu, 0, sizeof(menu));
+
+    return;
+}
+
 int authentication(char *username, char *password) {
     int rc = SQLITE_OK;
     char *sql = NULL;
 
     assert(username != NULL);
     assert(password != NULL);
+
+    g_status = 1;
 
     sql = sqlite3_mprintf(QUERY_ACCOUNT_STMT, username, password);
     if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
@@ -248,6 +322,7 @@ int authentication(char *username, char *password) {
     if (is_valid != 1) {
         return FORUM_ERR;
     } else {
+        is_valid = 0;
         return FORUM_OK;
     }
 }
