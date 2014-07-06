@@ -14,57 +14,6 @@
 #include "server.h"
 #include "fdb.h"
 
-
-int write_sock(int sock, char *buf, size_t len) {
-    ssize_t byteswrote = 0;
-    ssize_t ret = 0;
-
-    while (byteswrote < len)
-    {
-        ret = send(sock, buf + byteswrote, len - byteswrote, 0);
-
-        if (ret < 0)
-        {
-            return -1;
-        }
-
-        if (ret == 0)
-        {
-            break;
-        }
-
-        byteswrote += ret;
-    }
-
-    return byteswrote;
-}
-
-int read_sock(int sock, char *buf, size_t len) {
-    ssize_t ret = 0;
-    ssize_t bytesread = 0;
-
-    printf("Runs in read_sock, buffer is %s", buf);
-
-    while (bytesread < len)
-    {
-        ret = recv(sock, buf + bytesread, len - bytesread, 0);
-
-        if (ret == 0)
-        {
-            break;
-        }
-
-        if (ret < 0)
-        {
-            return -1;
-        }
-
-        bytesread += ret;
-    }
-
-    return bytesread;
-}
-
 /*
  * This will handle connection for each client
  * */
@@ -72,49 +21,39 @@ void *connection_handler(void *socket_desc) {
     int read_size = 0;
     int sock = *(int*)socket_desc;
     char *message = NULL;
-    char client_message[2000];
+    char client_message[CLIENT_MSG_LEN + 1];
 
-    while ( (read_size = recv(sock , client_message , 2000 , 0)) > 0 ) {
+    while ( (read_size = recv(sock , client_message , CLIENT_MSG_LEN , 0)) > 0 ) {
         struct Action *action = (struct Action *)client_message;
 
-        printf("Receive message %s\n", action->cmd);
-        printf("Filed 1 is %s\n", action->filed1);
-        printf("Filed 2 is %s\n", action->filed2);
-
         if (strncmp(action->cmd, CMD_LOGIN, strlen(CMD_LOGIN)) == 0) {
-            if (authentication(action->filed1, action->filed2) == FORUM_OK) {
-                send(sock, "AUTH SUCCESS", strlen("AUTH_SUCCESS"), 0);
+            if (action->field1 == NULL || action->field2 == NULL) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+                continue;
+            }
+
+            if (authentication(action->field1, action->field2) == FORUM_OK) {
+                send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
             } else {
-                send(sock, AUTH_FAILED, strlen(AUTH_FAILED), 0);
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
             }
         } else if ((strncmp(action->cmd, CMD_ADDPOST, strlen(CMD_ADDPOST))) == 0) {
-            if (add_post(action->filed1, action->filed2) == FORUM_OK) {
-                send(sock, POST_SUCCESS, strlen(POST_SUCCESS), 0);
+            if (add_post(action->field1, action->field2) == FORUM_OK) {
+                send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
             } else {
-                send(sock, POST_FAILED, strlen(POST_FAILED), 0);
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
             }
         } else if ((strncmp(action->cmd, CMD_DISPLAY, strlen(CMD_DISPLAY))) == 0) {
-            char *buffer = (void *)malloc(1024 + 1);
+            char *buffer = (void *)malloc(MAX_BUFF_LEN + 1);
             get_post(buffer);
-            printf("Result: %s", buffer);
             send(sock, buffer, strlen(buffer), 0);
             free(buffer);
        } else if ((strncmp(action->cmd, CMD_SHOW_POST, strlen(CMD_SHOW_POST))) == 0) {
-            char *buffer = (void *)malloc(1024 + 1);
-            show_post(action->filed1, buffer);
+            char *buffer = (void *)malloc(MAX_BUFF_LEN + 1);
+            show_post(action->field1, buffer);
             send(sock, buffer, strlen(buffer), 0);
             free(buffer);
        }
-
-
-//        if (strncmp(client_message, "admin", strlen("admin")) == 0) {
-//            if (authentication("admin", "admin") == FORUM_OK) {
-//
-//            } else {
-//                write(sock, "AUTH FAILED", strlen("AUTH_FAILED"));
-//            }
-//        }
-
     }
 
     if (read_size == 0) {

@@ -32,16 +32,20 @@
 #define CREATE_ACCOUNT_STMT  "id       INTEGER PRIMARY KEY AUTOINCREMENT," \
                              "name     TEXT              NOT NULL," \
                              "password TEXT            NOT NULL"
-#define ADD_ACCOUNT_STMT "INSERT INTO ACCOUNT (name, password) VALUES ('%s', '%s');"
-#define QUERY_ACCOUNT_STMT "SELECT * FROM ACCOUNT WHERE name = '%s' and password = '%s';"
+#define ADD_ACCOUNT_STMT "INSERT INTO ACCOUNT (name, password) VALUES ('%q', '%q');"
+#define QUERY_ACCOUNT_STMT "SELECT * FROM ACCOUNT WHERE name = '%q' and password = '%q';"
 
 #define POST_TABLE "POST"
 #define CREATE_POST_STMT  "id     INTEGER PRIMARY KEY AUTOINCREMENT," \
                           "name   TEXT            NOT NULL," \
                           "post   TEXT            NOT NULL"
-#define ADD_POST_STMT "INSERT INTO POST (name, post) VALUES ('%s', '%s');"
+#define ADD_POST_STMT "INSERT INTO POST (name, post) VALUES ('%q', '%q');"
 #define QUERY_POST_LIST "SELECT id, name FROM POST;"
-#define QUERY_POST_ENTRY "SELECT post FROM POST WHERE id = '%s';"
+#define QUERY_POST_ENTRY "SELECT post FROM POST WHERE id = '%q';"
+
+int is_valid = 0;
+int g_status = 0;
+char g_buffer[MAX_BUFF_LEN + 1] = {0};
 
 /**
  * Creates a new table if it doesn't exit yet.
@@ -175,32 +179,25 @@ int add_post(char *name, char *content) {
     return ret;
 }
 
-int is_valid = 0;
-int g_status = 0;
-char menu[1024 + 1] = {0};
-
 static int query_callback(void *data, int argc, char **argv, char **azColName) {
-    int i;
-    char buffer[100];
+    int i = 0;
+    char buffer[MAX_BUFF_LEN + 1] = {0};
 
     if (g_status == 1) {
         is_valid = 1;
     } else if (g_status == 2) {
         for(i = 0; i + 1 < argc; i = i + 2){
             snprintf(buffer, sizeof(buffer), "%s: %s\n", argv[i], argv[i + 1]);
-            if (strlen(menu) == 0) {
-                strcpy(menu, buffer);
+            if (strnlen(g_buffer, sizeof(g_buffer)) == 0) {
+                strncpy(g_buffer, buffer, MAX_BUFF_LEN);
             } else {
-                strcat(menu, buffer);
+                strncat(g_buffer, buffer, MAX_BUFF_LEN);
             }
         }
     } else if (g_status == 3) {
-        memset(menu, 0, sizeof(menu));
-        strcpy(menu, argv[0]);
+        memset(g_buffer, 0, sizeof(g_buffer));
+        strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
     }
-    printf("argc is %d\n", argc);
-    printf("argv is %s\n", argv[0]);
-    printf("Callback: %s", menu);
 
     return 0;
 }
@@ -263,18 +260,15 @@ void get_post(char *buff) {
 
     g_status = 2;
 
-    printf("Runs in get_post method");
-
     sql = sqlite3_mprintf(QUERY_POST_LIST);
     if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
         fprintf(stderr, "[%d]: Failed to query", rc);
         return;
     }
-    printf("Start to print\n %s", menu);
 
-    strncpy(buff, menu, 1025);
+    strncpy(buff, g_buffer, 1025);
 
-    memset(menu, 0, sizeof(menu));
+    memset(g_buffer, 0, sizeof(g_buffer));
 
     return;
 }
@@ -290,17 +284,12 @@ void show_post(char *id, char *buffer) {
         fprintf(stderr, "[%d]: Failed to query", rc);
         return;
     }
-    printf("SQL is %s\n", sql);
-
-    if (strlen(menu) == 0) {
-        strcpy(buffer, "Invalid id number");
+    if (strlen(g_buffer) == 0) {
+        strncpy(buffer, "Invalid ID", sizeof("Invalid ID"));
     } else {
-        strncpy(buffer, menu, 1025);
+        strncpy(buffer, g_buffer, MAX_BUFF_LEN);
     }
-    printf("Result is %s", buffer);
-
-    memset(menu, 0, sizeof(menu));
-
+    memset(g_buffer, 0, sizeof(g_buffer));
     return;
 }
 

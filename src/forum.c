@@ -28,9 +28,9 @@
 #include <stddef.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include "util.h"
 #include "forum.h"
 #include "server.h"
-#include "cli.h"
 
 #define COMMAND_LEN     1024
 #define USER_NAME_LEN   1024
@@ -38,11 +38,10 @@
 #define EXIT_CMD_LEN    4
 #define TITTLE_LEN      128
 #define POST_MAX_LEN    1024
-#define SEPERATOR       "SEPERATOR"
-#define RESPONSE_LEN    128
+#define RESPONSE_LEN    2048
+#define PROMPT_LEN      128
 
-char g_user_name[USER_NAME_LEN + 1] = {0};
-char g_password[PASSWORD_LEN + 1] = {0};
+static int g_login = 0;
 
 void usage(void) {
     fprintf(stderr, "Usage: ./forum_server [options]\n");
@@ -51,37 +50,41 @@ void usage(void) {
     exit(1);
 }
 
-int read_sock(int sock, char *buf, size_t len) {
-    ssize_t ret = 0;
-    ssize_t bytesread = 0;
+int message_handler(int sock, char *cmd, char *field1, char *field2) {
+    struct Action action;
+    char response[RESPONSE_LEN + 1] = {0};
 
-    printf("Runs in read_sock, buffer is %s\n", buf);
-
-    while (bytesread < len)
-    {
-        ret = recv(sock, buf + bytesread, len - bytesread, 0);
-
-        if (ret == 0)
-        {
-            break;
-        }
-
-        if (ret < 0)
-        {
-            return -1;
-        }
-
-        bytesread += ret;
+    if (cmd == NULL || field1 == NULL || field2 == NULL) {
+        return FORUM_ERR;
     }
 
-    return bytesread;
+    memset(&action, 0, sizeof(action));
+    strncpy(action.cmd, cmd, strnlen(cmd, CMD_MAX_LEN));
+    strncpy(action.field1, field1, strnlen(field1, FIELD_ONE_LEN));
+    strncpy(action.field2, field2, strnlen(field2, FIELD_TWO_LEN));
+
+    if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
+        fprintf(stderr, "Failed to send action");
+        return FORUM_ERR;
+    }
+
+    if ((recv(sock, response, RESPONSE_LEN, 0)) < 0) {
+        fprintf(stderr, "Failed to get response.");
+        return FORUM_ERR;
+    }
+
+    if ((strncmp(response, OPT_SUCCESS, strlen(OPT_SUCCESS))) != 0) {
+        return FORUM_ERR;
+    }
+
+    return FORUM_OK;
 }
 
 int main(int argc, char**argv) {
     int sock;
     struct sockaddr_in server;
     char command[COMMAND_LEN + 1]  = {0};
-    char server_reply[2000] = {0};
+
     struct Action action;
     char message[sizeof(action)];
 
@@ -111,49 +114,48 @@ int main(int argc, char**argv) {
         printf("forum:> ");
         if (fgets(command, COMMAND_LEN, stdin) == NULL) {
             fprintf(stderr, "Invalid command.\n");
-            exit(1);
+            continue;
+        }
+
+        if ((strncmp(command, "exit", strlen("exit"))) == 0) {
+            exit(-1);
         }
 
         if (strncmp(command, "login", strlen("login")) == 0) {
+            char user_name[USER_NAME_LEN + 1] = {0};
+            char password[PASSWORD_LEN + 1] = {0};
 
             printf("username:> ");
-            if (fgets(g_user_name, USER_NAME_LEN, stdin) == NULL) {
+            if (fgets(user_name, USER_NAME_LEN, stdin) == NULL) {
                 fprintf(stderr, "Failed to get user name.");
                 continue;
             }
-            g_user_name[strlen(g_user_name) - 1] = '\0';
+            user_name[strlen(user_name) - 1] = '\0';
 
             printf("password:> ");
-            if (fgets(g_password, PASSWORD_LEN, stdin) == NULL) {
+            if (fgets(password, PASSWORD_LEN, stdin) == NULL) {
                 fprintf(stderr, "Failed to get password");
                 continue;
             }
-            g_password[strlen(g_password) - 1] = '\0';
+            password[strlen(password) - 1] = '\0';
 
-            memset(&action, 0, sizeof(action));
-            strncpy(action.cmd, CMD_LOGIN, strlen(CMD_LOGIN));
-            strncpy(action.filed1, g_user_name, strlen(g_user_name));
-            strncpy(action.filed2, g_password, strlen(g_password));
-            if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
-                fprintf(stderr, "Failed to send action");
-                exit(-1);
-            }
-
-            if ((recv(sock, server_reply, strlen(AUTH_SUCCESS), 0)) < 0) {
-                fprintf(stderr, "Failed to get response.");
-                exit(-1);
-            }
-
-            if ((strncmp(server_reply, AUTH_SUCCESS, strlen(AUTH_SUCCESS))) != 0) {
-                printf("%s\n", server_reply);
-                continue;
+            if ((message_handler(sock, CMD_LOGIN, user_name, password)) != FORUM_OK) {
+                fprintf(stderr, "User name or password is wrong.\n");
+                g_login = 0;
             } else {
-                printf("Auth sucess!\n");
-                continue;
+                printf("Login success!\n");
+                g_login = 1;
             }
-        } else if ((strncmp(command, "add", strlen("add"))) == 0) {
+            continue;
+
+        } else if ((strncmp(command, "post", strlen("post"))) == 0) {
             char title[TITTLE_LEN + 1] = {0};
             char content[POST_MAX_LEN + 1] = {0};
+
+            if (g_login == 0) {
+                fprintf(stderr, "Please login to post new article.\n");
+                continue;
+            }
 
             printf("title:> ");
             if (fgets(title, TITTLE_LEN, stdin) == NULL) {
@@ -169,29 +171,20 @@ int main(int argc, char**argv) {
             }
             content[strnlen(content, POST_MAX_LEN) - 1] = '\0';
 
-            memset(&action, 0, sizeof(action));
-            strncpy(action.cmd, CMD_ADDPOST, strlen(CMD_ADDPOST));
-            strncpy(action.filed1, title, strlen(title));
-            strncpy(action.filed2, content, strlen(content));
-
-            if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
-                fprintf(stderr, "Failed to send action");
-                exit(-1);
-            }
-
-            if ((recv(sock, server_reply, strlen(POST_SUCCESS), 0)) < 0) {
-                fprintf(stderr, "Failed to get response.");
-                exit(-1);
-            }
-
-            if ((strncmp(server_reply, POST_SUCCESS, strlen(POST_SUCCESS))) != 0) {
-                fprintf(stderr, "Failed to post");
-                continue;
+            if ((message_handler(sock, CMD_ADDPOST, title, content)) != FORUM_OK) {
+                fprintf(stderr, "Failed to add post entry.\n");
             } else {
-                printf("Post success");
+                printf("Create post success!\n");
+            }
+            continue;
+
+        } else if ((strncmp(command, "display", strlen("display"))) == 0) {
+            char server_reply[CLIENT_MSG_LEN] = {0};
+            if (g_login == 0) {
+                fprintf(stderr, "Please login to post new article.\n");
                 continue;
             }
-        } else if ((strncmp(command, "display", strlen("display"))) == 0) {
+
             memset(&action, 0, sizeof(action));
             strncpy(action.cmd, CMD_DISPLAY, strlen(CMD_DISPLAY));
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
@@ -211,10 +204,10 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Empty command.");
                 continue;
             }
-            command[strnlen(command, COMMAND_LEN) - 1] = '\0';
+            command[strnlen(command, COMMAND_LEN)] = '\0';
             memset(&action, 0, sizeof(action));
             strncpy(action.cmd, CMD_SHOW_POST, strlen(CMD_SHOW_POST));
-            strncpy(action.filed1, command, strlen(command));
+            strncpy(action.field1, command, strnlen(command, COMMAND_LEN));
 
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
                 fprintf(stderr, "Failed to send action");
@@ -228,7 +221,6 @@ int main(int argc, char**argv) {
             }
             printf("%s\n", server_reply);
         }
-
     }
 
     return 0;
