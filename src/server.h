@@ -3,7 +3,7 @@
 
 
 #define MAXRECVLEN 500
-#define PORTNUM 6000
+#define PORTNUM 5001
 
 #define CMD_LOGIN     "LOGIN"
 #define CMD_ADDPOST   "ADDPOST"
@@ -11,6 +11,7 @@
 #define CMD_SHOW_POST "SHOWPOST"
 #define CMD_UPLOAD    "UPLOAD"
 #define CMD_FILE      "FILE"
+#define CMD_DOWNLOAD  "DOWNLOAD"
 
 #define OPT_SUCCESS "SUCCESS"
 #define OPT_FAILED  "FAILED"

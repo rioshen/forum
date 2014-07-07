@@ -292,7 +292,7 @@ int main(int argc, char**argv) {
                 continue;
             }
 
-            printf("file path:> ");
+            printf("file name:> ");
             if ((fgets(file_name, FILE_NAME_LEN, stdin)) == NULL) {
                 fprintf(stderr, "Failed to get post content.");
                 continue;
@@ -311,6 +311,61 @@ int main(int argc, char**argv) {
             } else {
                 fprintf(stdout, "%s\n", "Upload file success!");
             }
+            continue;
+        } else if ((strncmp(command, "files", strlen("files"))) == 0) {
+            char server_reply[CLIENT_MSG_LEN] = {0};
+            if (g_login == 0) {
+                fprintf(stderr, "Please login to post new article.\n");
+                continue;
+            }
+
+            memset(&action, 0, sizeof(action));
+            strncpy(action.cmd, CMD_FILE, strlen(CMD_FILE));
+            if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
+                fprintf(stderr, "Failed to send action");
+                exit(-1);
+            }
+
+            memset(server_reply, 0, sizeof(server_reply));
+            if ((recv(sock, server_reply, sizeof(server_reply), 0)) < 0) {
+                fprintf(stderr, "Failed to get response.");
+                exit(-1);
+            }
+            printf("%s", server_reply);
+
+            printf("file number:> ");
+            if ((fgets(command, COMMAND_LEN, stdin)) == NULL) {
+                fprintf(stderr, "Empty command.");
+                continue;
+            }
+            command[strnlen(command, COMMAND_LEN) - 1] = '\0';
+            if (input_validation(command) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
+
+            memset(&action, 0, sizeof(action));
+            strncpy(action.cmd, CMD_DOWNLOAD, strlen(CMD_DOWNLOAD));
+            strncpy(action.field1, command, strnlen(command, COMMAND_LEN));
+            printf("command is %s, number is %s", action.cmd, command);
+            if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
+                fprintf(stderr, "Failed to send action");
+                exit(-1);
+            }
+
+            memset(server_reply, 0, sizeof(server_reply));
+            int size = 0;
+            char *path = (void *)malloc(FILE_NAME_LEN + 1);
+            if ((size = recv(sock, server_reply, sizeof(server_reply), 0)) < 0) {
+                fprintf(stderr, "Failed to get response.");
+                exit(-1);
+            }
+            if ((set_file_content(size, "./download/", "download.txt", path, server_reply)) != FORUM_OK) {
+                fprintf(stderr, "%s\n","Failed to download file.");
+            } else {
+                fprintf(stdout, "Download file %s success!\n", path);
+            }
+            free(path);
             continue;
         }
     }

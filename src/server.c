@@ -47,6 +47,8 @@ void *connection_handler(void *socket_desc) {
     while ( (read_size = recv(sock , client_message , CLIENT_MSG_LEN , 0)) > 0 ) {
         struct Action *action = (struct Action *)client_message;
 
+        printf("Receive message: %s\n", action->cmd);
+
         if (strncmp(action->cmd, CMD_LOGIN, strlen(CMD_LOGIN)) == 0) {
             if (action->field1 == NULL || action->field2 == NULL) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
@@ -70,23 +72,43 @@ void *connection_handler(void *socket_desc) {
         } else if ((strncmp(action->cmd, CMD_DISPLAY, strlen(CMD_DISPLAY))) == 0) {
             char *buffer = (void *)malloc(MAX_BUFF_LEN + 1);
             get_post(buffer);
-            send(sock, buffer, strlen(buffer), 0);
+            send(sock, buffer, MAX_BUFF_LEN, 0);
             free(buffer);
        } else if ((strncmp(action->cmd, CMD_SHOW_POST, strlen(CMD_SHOW_POST))) == 0) {
             char *buffer = (void *)malloc(MAX_BUFF_LEN + 1);
             show_post(action->field1, buffer);
-            send(sock, buffer, strlen(buffer), 0);
+            send(sock, buffer, MAX_BUFF_LEN, 0);
             free(buffer);
        } else if ((strncmp(action->cmd, CMD_UPLOAD, strlen(CMD_UPLOAD))) == 0) {
             char *path = (void *)malloc(FILE_NAME_LEN + 1);
-            if ((set_file_content(read_size, action->field1, path, action->field2)) != FORUM_OK) {
+            if ((set_file_content(read_size, FILE_PREFIX, action->field1, path, action->field2)) != FORUM_OK) {
+                free(path);
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+                continue;
             }
             if ((add_file(action->field1, path)) != FORUM_OK) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
             } else {
                 send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
             }
+            free(path);
+       } else if ((strncmp(action->cmd, CMD_FILE, strlen(CMD_FILE))) == 0) {
+            char *buffer = (void *)malloc(MAX_BUFF_LEN + 1);
+            get_file_list(buffer);
+            send(sock, buffer, MAX_BUFF_LEN, 0);
+            free(buffer);
+       } else if ((strncmp(action->cmd, CMD_DOWNLOAD, strlen(CMD_DOWNLOAD))) == 0) {
+            char *file_name = (void *)malloc(FILE_NAME_LEN + 1);
+            char *buffer = (void *)malloc(FIELD_TWO_LEN + 1);
+            get_file(action->field1, file_name);
+            printf("file name is %s\n", file_name);
+            if ((get_file_content(file_name, buffer)) != FORUM_OK) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+            } else {
+                send(sock, buffer, FIELD_TWO_LEN, 0);
+            }
+            free(file_name);
+            free(buffer);
        }
     }
 

@@ -50,16 +50,16 @@ int get_file_content(char *file_name, char *buffer) {
     return FORUM_OK;
 }
 
-int set_file_content(int size, char *name, char *path, char *content) {
+int set_file_content(int size, char *prefix, char *name, char *path, char *content) {
     int offset = 0;
     FILE *file = NULL;
     char file_name[FILE_NAME_LEN + 1] = {0};
 
-    if (name == NULL || path == NULL || content == NULL) {
+    if (name == NULL || path == NULL || content == NULL || prefix == NULL) {
         return FORUM_ERR;
     }
 
-    snprintf(file_name, "%s%s", FILE_PREFIX, name);
+    snprintf(file_name, sizeof(file_name), "%s%s", prefix, name);
     printf("recv file %s\n", file_name);
     file = fopen(file_name, "wb");
     if (file == NULL) {

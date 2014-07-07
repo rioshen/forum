@@ -28,27 +28,28 @@
 
 #define DB_NAME "forum.db"
 
-#define ACCOUNT_TABLE "ACCOUNT"
-#define CREATE_ACCOUNT_STMT  "id       INTEGER PRIMARY KEY AUTOINCREMENT," \
+#define ACCOUNT_TABLE       "ACCOUNT"
+#define CREATE_ACCOUNT_STMT "id       INTEGER PRIMARY KEY AUTOINCREMENT," \
+                            "name     TEXT              NOT NULL," \
+                            "password TEXT            NOT NULL"
+#define ADD_ACCOUNT_STMT    "INSERT INTO ACCOUNT (name, password) VALUES ('%q', '%q');"
+#define QUERY_ACCOUNT_STMT  "SELECT * FROM ACCOUNT WHERE name = '%q' and password = '%q';"
+
+#define POST_TABLE          "POST"
+#define CREATE_POST_STMT    "id     INTEGER PRIMARY KEY AUTOINCREMENT," \
+                            "name   TEXT            NOT NULL," \
+                            "post   TEXT            NOT NULL"
+#define ADD_POST_STMT        "INSERT INTO POST (name, post) VALUES ('%q', '%q');"
+#define QUERY_POST_LIST      "SELECT id, name FROM POST;"
+#define QUERY_POST_ENTRY     "SELECT post FROM POST WHERE id = '%q';"
+
+#define FILE_TALBE           "UPLOAD"
+#define CREATE_FILE_STMT     "id        INTEGER PRIMARY KEY AUTOINCREMENT," \
                              "name     TEXT              NOT NULL," \
-                             "password TEXT            NOT NULL"
-#define ADD_ACCOUNT_STMT "INSERT INTO ACCOUNT (name, password) VALUES ('%q', '%q');"
-#define QUERY_ACCOUNT_STMT "SELECT * FROM ACCOUNT WHERE name = '%q' and password = '%q';"
-
-#define POST_TABLE "POST"
-#define CREATE_POST_STMT  "id     INTEGER PRIMARY KEY AUTOINCREMENT," \
-                          "name   TEXT            NOT NULL," \
-                          "post   TEXT            NOT NULL"
-#define ADD_POST_STMT "INSERT INTO POST (name, post) VALUES ('%q', '%q');"
-#define QUERY_POST_LIST "SELECT id, name FROM POST;"
-#define QUERY_POST_ENTRY "SELECT post FROM POST WHERE id = '%q';"
-
-#define FILE_TALBE "UPLOAD"
-#define CREATE_FILE_STMT "id        INTEGER PRIMARY KEY AUTOINCREMENT," \
-                          "name     TEXT              NOT NULL," \
-                          "path     TEXT              NOT NULL"
-#define ADD_FILE_STMT     "INSERT INTO UPLOAD (name, path) VALUES ('%q', '%q');"
-#define QUERY_FILE_STMT   "SELECT path FROM UPLOAD WHERE name = '%q';"
+                             "path     TEXT              NOT NULL"
+#define ADD_FILE_STMT        "INSERT INTO UPLOAD (name, path) VALUES ('%q', '%q');"
+#define QUERY_FILE_LIST      "SELECT id, name, path FROM UPLOAD;"
+#define QUERY_FILE_STMT      "SELECT path FROM UPLOAD WHERE id = '%q';"
 
 int is_valid = 0;
 int g_status = 0;
@@ -107,6 +108,12 @@ int init_database(void) {
     ret = create_table(DB_NAME, POST_TABLE, CREATE_POST_STMT);
     if (ret != FORUM_OK) {
         fprintf(stderr, "[%d] Failed to create post table.", ret);
+        return ret;
+    }
+
+    ret = create_table(DB_NAME, FILE_TALBE, CREATE_FILE_STMT);
+    if (ret != FORUM_OK) {
+        fprintf(stderr, "[%d] Failed to create upload table.", ret);
         return ret;
     }
 
@@ -228,6 +235,16 @@ static int query_callback(void *data, int argc, char **argv, char **azColName) {
         case 4:
             strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
             break;
+        case 5:
+            for (i = 0; i + 2 < argc; i = i + 3) {
+                snprintf(buffer, sizeof(buffer), "%s: %s: %s\n", argv[i], argv[i + 1], argv[i + 2]);
+                if (strnlen(g_buffer, sizeof(g_buffer)) == 0) {
+                    strncpy(g_buffer, buffer, MAX_BUFF_LEN);
+                } else {
+                    strncat(g_buffer, buffer, MAX_BUFF_LEN);
+                }
+            }
+            break;
         default:
             break;
     }
@@ -276,23 +293,43 @@ static int query(char *db_name, char *sql_stmt) {
     return FORUM_OK;
 }
 
-void get_file(char *name, char *path) {
+void get_file(char *id, char *path) {
     int rc = SQLITE_OK;
     char *sql = NULL;
 
-    if (name == NULL || path == NULL) {
+    if (id == NULL || path == NULL) {
         return;
     }
 
     g_status = 4;
 
-    sql = sqlite3_mprintf(QUERY_FILE_STMT, name);
+    sql = sqlite3_mprintf(QUERY_FILE_STMT, id);
     if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
         fprintf(stderr, "[%d]: Failed to query", rc);
         return;
     }
 
     strncpy(path, g_buffer, MAX_BUFF_LEN);
+    printf("Get file %s\n", path);
+    memset(g_buffer, 0, sizeof(g_buffer));
+
+    return;
+}
+
+void get_file_list(char *buffer) {
+    int rc = SQLITE_OK;
+    char *sql = NULL;
+
+    g_status = 5;
+
+    sql = sqlite3_mprintf(QUERY_FILE_LIST);
+    if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
+        fprintf(stderr, "[%d]: Failed to query", rc);
+        return;
+    }
+
+    strncpy(buffer, g_buffer, MAX_BUFF_LEN);
+    printf("%s\n", buffer);
     memset(g_buffer, 0, sizeof(g_buffer));
 
     return;
