@@ -9,5 +9,10 @@
 #define DEFAULT_ADDRESS "127.0.0.1"
 #define DEFAULT_PORT    5000
 #define ADDRESS_LEN     255
+#define FILE_PREFIX "./upload/"
+#define FILE_NAME_LEN strlen(FILE_PREFIX) + FIELD_ONE_LEN
+
+int get_file_content(char *file_name, char *buffer);
+int set_file_content(int size, char *name, char *path, char *content);
 
 #endif /* UTIL_H */

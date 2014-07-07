@@ -1,3 +1,25 @@
+/*
+ * Copyright © 2014
+ * Rio Shen <rioxshen@gmail.com>
+ *
+ * Licensed under the GNU General Public License Version 2
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>
+ * or write to the Free Software Foundation, Inc., 51 Franklin St
+ * Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +35,6 @@
 #include "util.h"
 #include "server.h"
 #include "fdb.h"
-
 
 /**
  * This will handle connection for each client
@@ -56,6 +77,16 @@ void *connection_handler(void *socket_desc) {
             show_post(action->field1, buffer);
             send(sock, buffer, strlen(buffer), 0);
             free(buffer);
+       } else if ((strncmp(action->cmd, CMD_UPLOAD, strlen(CMD_UPLOAD))) == 0) {
+            char *path = (void *)malloc(FILE_NAME_LEN + 1);
+            if ((set_file_content(read_size, action->field1, path, action->field2)) != FORUM_OK) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+            }
+            if ((add_file(action->field1, path)) != FORUM_OK) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+            } else {
+                send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
+            }
        }
     }
 

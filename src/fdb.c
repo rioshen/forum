@@ -43,6 +43,13 @@
 #define QUERY_POST_LIST "SELECT id, name FROM POST;"
 #define QUERY_POST_ENTRY "SELECT post FROM POST WHERE id = '%q';"
 
+#define FILE_TALBE "UPLOAD"
+#define CREATE_FILE_STMT "id        INTEGER PRIMARY KEY AUTOINCREMENT," \
+                          "name     TEXT              NOT NULL," \
+                          "path     TEXT              NOT NULL"
+#define ADD_FILE_STMT     "INSERT INTO UPLOAD (name, path) VALUES ('%q', '%q');"
+#define QUERY_FILE_STMT   "SELECT path FROM UPLOAD WHERE name = '%q';"
+
 int is_valid = 0;
 int g_status = 0;
 char g_buffer[MAX_BUFF_LEN + 1] = {0};
@@ -179,24 +186,50 @@ int add_post(char *name, char *content) {
     return ret;
 }
 
+int add_file(char *name, char *path) {
+    int ret = FORUM_OK;
+    char *sql = NULL;
+
+    if (name == NULL || path == NULL) {
+        return FORUM_ERR;
+    }
+
+    sql = sqlite3_mprintf(ADD_FILE_STMT, name, path);
+    ret = add_value(DB_NAME, sql);
+    if (ret != FORUM_OK) {
+        fprintf(stderr, "Failed to add post into database.");
+    }
+    sqlite3_free(sql);
+
+    return FORUM_OK;
+}
+
 static int query_callback(void *data, int argc, char **argv, char **azColName) {
     int i = 0;
     char buffer[MAX_BUFF_LEN + 1] = {0};
 
-    if (g_status == 1) {
-        is_valid = 1;
-    } else if (g_status == 2) {
-        for(i = 0; i + 1 < argc; i = i + 2){
-            snprintf(buffer, sizeof(buffer), "%s: %s\n", argv[i], argv[i + 1]);
-            if (strnlen(g_buffer, sizeof(g_buffer)) == 0) {
-                strncpy(g_buffer, buffer, MAX_BUFF_LEN);
-            } else {
-                strncat(g_buffer, buffer, MAX_BUFF_LEN);
+    switch (g_status) {
+        case 1:
+            is_valid = 1;
+            break;
+        case 2:
+            for(i = 0; i + 1 < argc; i = i + 2) {
+                snprintf(buffer, sizeof(buffer), "%s: %s\n", argv[i], argv[i + 1]);
+                if (strnlen(g_buffer, sizeof(g_buffer)) == 0) {
+                    strncpy(g_buffer, buffer, MAX_BUFF_LEN);
+                } else {
+                    strncat(g_buffer, buffer, MAX_BUFF_LEN);
+                }
             }
-        }
-    } else if (g_status == 3) {
-        memset(g_buffer, 0, sizeof(g_buffer));
-        strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
+            break;
+        case 3:
+            strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
+            break;
+        case 4:
+            strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
+            break;
+        default:
+            break;
     }
 
     return 0;
@@ -241,6 +274,28 @@ static int query(char *db_name, char *sql_stmt) {
     }
 
     return FORUM_OK;
+}
+
+void get_file(char *name, char *path) {
+    int rc = SQLITE_OK;
+    char *sql = NULL;
+
+    if (name == NULL || path == NULL) {
+        return;
+    }
+
+    g_status = 4;
+
+    sql = sqlite3_mprintf(QUERY_FILE_STMT, name);
+    if ((rc = query(DB_NAME, sql)) != FORUM_OK) {
+        fprintf(stderr, "[%d]: Failed to query", rc);
+        return;
+    }
+
+    strncpy(path, g_buffer, MAX_BUFF_LEN);
+    memset(g_buffer, 0, sizeof(g_buffer));
+
+    return;
 }
 
 void get_post(char *buff) {

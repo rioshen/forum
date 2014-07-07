@@ -20,7 +20,6 @@
  * Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +28,7 @@
 #include <stddef.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include "util.h"
 #include "forum.h"
 #include "server.h"
@@ -49,6 +49,27 @@ void usage(void) {
     fprintf(stderr, "       ./forum-server -h or --help\n");
     fprintf(stderr, "       ./forum_server --port 777\n");
     exit(1);
+}
+
+/**
+ * To avoid XSS, we just handle text file
+ */
+static int file_validation(const char *file_name) {
+    const char* dot = strchr(file_name, '.');
+
+    if (!dot || dot == file_name) return FORUM_ERR;
+
+    if (strncmp((dot + 1), "txt", strlen("txt")) != 0) {
+        fprintf(stderr, "%s\n", "Unsupported file type.");
+        return FORUM_ERR;
+    }
+
+    if ((access(file_name, F_OK)) == -1) {
+        fprintf(stderr, "%s\n", "File does not exist");
+        return FORUM_ERR;
+    }
+
+    return FORUM_OK;
 }
 
 /**
@@ -263,6 +284,34 @@ int main(int argc, char**argv) {
                 exit(-1);
             }
             printf("%s\n", server_reply);
+        } else if ((strncmp(command, "upload", strlen("upload"))) == 0) {
+            char content[FIELD_TWO_LEN + 1] = {0};
+            char file_name[FILE_NAME_LEN + 1] = {0};
+            if (g_login == 0) {
+                fprintf(stderr, "Please login to post new article.\n");
+                continue;
+            }
+
+            printf("file path:> ");
+            if ((fgets(file_name, FILE_NAME_LEN, stdin)) == NULL) {
+                fprintf(stderr, "Failed to get post content.");
+                continue;
+            }
+            file_name[strnlen(file_name, FILE_NAME_LEN) - 1] = '\0';
+            if ((file_validation(file_name)) != FORUM_OK) {
+                continue;
+            }
+
+            if ((get_file_content(file_name, content)) != FORUM_OK) {
+                fprintf(stderr, "%s\n", "Failed to get file content");
+                continue;
+            }
+            if ((message_handler(sock, CMD_UPLOAD, file_name, content)) != FORUM_OK) {
+                fprintf(stderr, "%s\n", "Failed to send file content");
+            } else {
+                fprintf(stdout, "%s\n", "Upload file success!");
+            }
+            continue;
         }
     }
 
