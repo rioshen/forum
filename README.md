@@ -1,10 +1,21 @@
 A Secure Forum
 ===============
 
-This is a secure project of my _Application Security_ course.
-
 ###Introduction
-This project is implemented in `C`, in order to improve my secure design mindsets.
+This project is implemented in `C`, in order to improve my secure design mindsets. The program allows user sign up and login user can create post or upload file to the server.
+
+####Building.
+This program can be compiled and used on OSX and Linux. It is simple as: `➜  forum git:(master) make`
+
+####Running.
+As this is a client/server program, you need to run them separately.
+
+For server, run `➜  forum git:(master)./server`.
+
+For client, run `➜  forum git:(master)./client`.
+
+####Playing.
+
 
 ###Vulnerabilities and Protections
 The purpose of this project is to examine my _Application Security_ mindsets. So here I will demonstrate what I have done to protect my program.
@@ -42,7 +53,7 @@ src/form.c:
 fprintf(stderr, "Failed to get user name.\n");
 continue;
 ```
-#####3. Off-by-one errors with magic number.
+#####4. Off-by-one errors with magic number.
 Off-by-one occurs when programmer misuse or hard code the length. To avoid this, all static array must use `macro` for its length. Hard code or magic number are not allowed for this project.
 
 ```

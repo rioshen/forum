@@ -26,12 +26,10 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 
 #include "util.h"
-#include "forum.h"
 #include "server.h"
 
 #define COMMAND_LEN     1024

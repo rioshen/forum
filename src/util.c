@@ -26,8 +26,10 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stddef.h>
 
+#include "server.h"
 #include "util.h"
 
 /* use global variable to record uid and cover it back after file operations.*/

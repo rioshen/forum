@@ -28,15 +28,4 @@ struct Action {
     char field2[FIELD_TWO_LEN + 1];
 };
 
-
-/* server state*/
-struct forum_server {
-    int port; /* TCP listening port */
-    char bindaddr; /* Bindding address */
-};
-
-/* function declaration */
-void init_server();
-int read_sock(int sock, char *buf, size_t len);
-
 #endif /* __SERVER_H */
