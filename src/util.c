@@ -133,6 +133,6 @@ int set_file_content(int size, char *prefix, char *name, char *path, char *conte
     } while (offset < size);
 
     fclose(file);
-    strlcpy(path, file_name, FILE_NAME_LEN);
+    strncpy(path, file_name, FILE_NAME_LEN);
     return FORUM_OK;
 }

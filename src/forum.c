@@ -104,9 +104,9 @@ int message_handler(int sock, char *cmd, char *field1, char *field2) {
     }
 
     memset(&action, 0, sizeof(action));
-    strlcpy(action.cmd, cmd, strnlen(cmd, CMD_MAX_LEN));
-    strlcpy(action.field1, field1, strnlen(field1, FIELD_ONE_LEN));
-    strlcpy(action.field2, field2, strnlen(field2, FIELD_TWO_LEN));
+    strncpy(action.cmd, cmd, strnlen(cmd, CMD_MAX_LEN));
+    strncpy(action.field1, field1, strnlen(field1, FIELD_ONE_LEN));
+    strncpy(action.field2, field2, strnlen(field2, FIELD_TWO_LEN));
 
     if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
         fprintf(stderr, "Failed to send action");
@@ -171,7 +171,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get user name.\n");
                 continue;
             }
-            user_name[strnlen(user_name, USER_NAME_LEN) - 1] = '\0';
+            user_name[strlen(user_name) - 1] = '\0';
             if (input_validation(user_name) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -182,7 +182,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get password");
                 continue;
             }
-            password[strnlen(password, PASSWORD_LEN) - 1] = '\0';
+            password[strlen(password) - 1] = '\0';
             if (input_validation(password) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -203,7 +203,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get user name.\n");
                 continue;
             }
-            user_name[strnlen(user_name, USER_NAME_LEN) - 1] = '\0';
+            user_name[strlen(user_name) - 1] = '\0';
             if (input_validation(user_name) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -214,7 +214,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get password");
                 continue;
             }
-            password[strnlen(password, PASSWORD_LEN) - 1] = '\0';
+            password[strlen(password) - 1] = '\0';
             if (input_validation(password) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -275,7 +275,7 @@ int main(int argc, char**argv) {
             }
 
             memset(&action, 0, sizeof(action));
-            strlcpy(action.cmd, CMD_DISPLAY, strlen(CMD_DISPLAY));
+            strncpy(action.cmd, CMD_DISPLAY, strlen(CMD_DISPLAY));
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
                 fprintf(stderr, "Failed to send action");
                 exit(-1);
@@ -300,8 +300,8 @@ int main(int argc, char**argv) {
             }
 
             memset(&action, 0, sizeof(action));
-            strlcpy(action.cmd, CMD_SHOW_POST, strlen(CMD_SHOW_POST));
-            strlcpy(action.field1, command, strnlen(command, COMMAND_LEN));
+            strncpy(action.cmd, CMD_SHOW_POST, strlen(CMD_SHOW_POST));
+            strncpy(action.field1, command, strnlen(command, COMMAND_LEN));
 
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
                 fprintf(stderr, "Failed to send action");
@@ -350,7 +350,7 @@ int main(int argc, char**argv) {
             }
 
             memset(&action, 0, sizeof(action));
-            strlcpy(action.cmd, CMD_FILE, strlen(CMD_FILE));
+            strncpy(action.cmd, CMD_FILE, strlen(CMD_FILE));
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
                 fprintf(stderr, "Failed to send action");
                 exit(-1);
@@ -375,8 +375,8 @@ int main(int argc, char**argv) {
             }
 
             memset(&action, 0, sizeof(action));
-            strlcpy(action.cmd, CMD_DOWNLOAD, strlen(CMD_DOWNLOAD));
-            strlcpy(action.field1, command, strnlen(command, COMMAND_LEN));
+            strncpy(action.cmd, CMD_DOWNLOAD, strlen(CMD_DOWNLOAD));
+            strncpy(action.field1, command, strnlen(command, COMMAND_LEN));
             printf("command is %s, number is %s", action.cmd, command);
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
                 fprintf(stderr, "Failed to send action");

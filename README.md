@@ -15,7 +15,14 @@ For server, run `➜  forum git:(master)./server`.
 For client, run `➜  forum git:(master)./client`.
 
 ####Playing.
+Here I introduce a simple yet typical usage of secure forum program.
 
+#####1. Sign up.
+Use command `signup` to register, user name and password can only contain alphabetics and digits, special characters are not allowed.
+
+```
+
+```
 
 ###Vulnerabilities and Protections
 The purpose of this project is to examine my _Application Security_ mindsets. So here I will demonstrate what I have done to protect my program.
@@ -33,14 +40,14 @@ if (fgets(password, PASSWORD_LEN, stdin) == NULL) {
 }
 ```
 
-#####2. `strlcpy(), strlcat(), strncmp()` instead of `strcpy(), strcat(), strcmp() or strncpy(), strncat()`.
+#####2. `strncpy(), strncat(), strncmp()` instead of `strcpy(), strcat(), strcmp()`.
 The `strcpy()`  built-in function does not check buffer lengths and may very well overwrite memory zone contiguous to the intended destination.
 ```
 src/server.c:
 if ((strncmp(action->cmd, CMD_SIGNUP, strlen(CMD_SIGNUP))) == 0) {
 
 src/forum.c:
-strlcpy(action.field1, command, strnlen(command, COMMAND_LEN));
+strncpy(action.field1, command, strnlen(command, COMMAND_LEN));
 ```
 
 #####3. String formatting attack.

@@ -47,12 +47,17 @@ void *connection_handler(void *socket_desc) {
     while ( (read_size = recv(sock , client_message , CLIENT_MSG_LEN , 0)) > 0 ) {
         struct Action *action = (struct Action *)client_message;
 
+        printf("Recieve message %s\n", action->cmd);
+        printf("First field %s\n", action->field1);
+        printf("Second field %s\n", action->field2);
+
         if ((strncmp(action->cmd, CMD_SIGNUP, strlen(CMD_SIGNUP))) == 0) {
             if (action->field1 == NULL || action->field2 == NULL) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
                 continue;
             }
             if (add_account(action->field1, action->field2) != FORUM_OK) {
+                fprintf(stderr, "Failed to add user.\n");
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
             } else {
                 send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
