@@ -39,9 +39,23 @@ To avoid this, most of my program is hard code the information while interacting
 
 ```
 src/form.c:
-
 fprintf(stderr, "Failed to get user name.\n");
 continue;
+```
+#####3. Off-by-one errors with magic number.
+Off-by-one occurs when programmer misuse or hard code the length. To avoid this, all static array must use `macro` for its length. Hard code or magic number are not allowed for this project.
+
+```
+src/forum.c:
+#define USER_NAME_LEN   1024
+
+char user_name[USER_NAME_LEN + 1] = {0};
+
+if (fgets(user_name, USER_NAME_LEN, stdin) == NULL) {
+    fprintf(stderr, "Failed to get user name.\n");
+    continue;
+}
+user_name[strnlen(user_name, USER_NAME_LEN) - 1] = '\0';
 ```
 
 ####SQL Injection
