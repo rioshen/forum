@@ -5,7 +5,7 @@ A Secure Forum
 This project is implemented in `C`, in order to improve my secure design mindsets. The program allows user sign up and login user can create post or upload file to the server.
 
 ####Building.
-This program can be compiled and used on OSX and Linux. It is simple as: `➜  forum git:(master) make`
+This program can be compiled and used on OSX and Linux. It is as simple as: `➜  forum git:(master) make`
 
 ####Running.
 As this is a client/server program, you need to run them separately.
