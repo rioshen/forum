@@ -5,6 +5,7 @@
 #define MAXRECVLEN 500
 #define PORTNUM 5001
 
+#define CMD_SIGNUP    "SIGNUP"
 #define CMD_LOGIN     "LOGIN"
 #define CMD_ADDPOST   "ADDPOST"
 #define CMD_DISPLAY   "DISPLAY"

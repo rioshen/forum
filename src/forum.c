@@ -164,7 +164,39 @@ int main(int argc, char**argv) {
             exit(-1);
         }
 
-        if (strncmp(command, "login", strlen("login")) == 0) {
+        if ((strncmp(command, "signup", strlen("signup"))) == 0) {
+            char user_name[USER_NAME_LEN + 1] = {0};
+            char password[PASSWORD_LEN + 1] = {0};
+
+            printf("user name:> ");
+            if (fgets(user_name, USER_NAME_LEN, stdin) == NULL) {
+                fprintf(stderr, "Failed to get user name.\n");
+                continue;
+            }
+            user_name[strlen(user_name) - 1] = '\0';
+            if (input_validation(user_name) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
+
+            printf("password:> ");
+            if (fgets(password, PASSWORD_LEN, stdin) == NULL) {
+                fprintf(stderr, "Failed to get password");
+                continue;
+            }
+            password[strlen(password) - 1] = '\0';
+            if (input_validation(password) != FORUM_OK) {
+                fprintf(stderr, "Input data could only contain digit or alpha\n");
+                continue;
+            }
+
+            if ((message_handler(sock, CMD_SIGNUP, user_name, password)) != FORUM_OK) {
+                fprintf(stderr, "Failed to sign up a new user.\n");
+            } else {
+                printf("Register success!\n");
+            }
+            continue;
+        } else if (strncmp(command, "login", strlen("login")) == 0) {
             char user_name[USER_NAME_LEN + 1] = {0};
             char password[PASSWORD_LEN + 1] = {0};
 

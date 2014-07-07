@@ -49,7 +49,19 @@ void *connection_handler(void *socket_desc) {
 
         printf("Receive message: %s\n", action->cmd);
 
-        if (strncmp(action->cmd, CMD_LOGIN, strlen(CMD_LOGIN)) == 0) {
+        if ((strncmp(action->cmd, CMD_SIGNUP, strlen(CMD_SIGNUP))) == 0) {
+            if (action->field1 == NULL || action->field2 == NULL) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+                continue;
+            }
+            if (add_account(action->field1, action->field2) != FORUM_OK) {
+                send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
+            } else {
+                send(sock, OPT_SUCCESS, strlen(OPT_SUCCESS), 0);
+            }
+            continue;
+
+        }   else if (strncmp(action->cmd, CMD_LOGIN, strlen(CMD_LOGIN)) == 0) {
             if (action->field1 == NULL || action->field2 == NULL) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
                 continue;
