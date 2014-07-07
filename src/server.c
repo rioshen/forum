@@ -47,8 +47,6 @@ void *connection_handler(void *socket_desc) {
     while ( (read_size = recv(sock , client_message , CLIENT_MSG_LEN , 0)) > 0 ) {
         struct Action *action = (struct Action *)client_message;
 
-        printf("Receive message: %s\n", action->cmd);
-
         if ((strncmp(action->cmd, CMD_SIGNUP, strlen(CMD_SIGNUP))) == 0) {
             if (action->field1 == NULL || action->field2 == NULL) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
@@ -61,7 +59,7 @@ void *connection_handler(void *socket_desc) {
             }
             continue;
 
-        }   else if (strncmp(action->cmd, CMD_LOGIN, strlen(CMD_LOGIN)) == 0) {
+        } else if (strncmp(action->cmd, CMD_LOGIN, strlen(CMD_LOGIN)) == 0) {
             if (action->field1 == NULL || action->field2 == NULL) {
                 send(sock, OPT_FAILED, strlen(OPT_FAILED), 0);
                 continue;
@@ -125,10 +123,10 @@ void *connection_handler(void *socket_desc) {
     }
 
     if (read_size == 0) {
-        puts("Client disconnected");
+        printf("Client disconnected\n");
         fflush(stdout);
     } else if (read_size == -1) {
-        perror("recv failed");
+        perror("Receive failed.\n");
     }
 
     free(socket_desc);
@@ -143,14 +141,14 @@ int main(int argc , char *argv[]) {
     char *message;
 
     if ((ret = init_database()) != FORUM_OK) {
-        fprintf(stderr, "Initialize database failed.");
+        fprintf(stderr, "Initialize database failed.\n");
         return -1;
     }
 
     //Create socket
-    socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-    if (socket_desc == -1)    {
-        printf("Could not create socket");
+    if ((socket_desc = socket(AF_INET , SOCK_STREAM , 0)) == -1) {
+        fprintf(stderr, "Initialize socket failed.\n");
+        return -1;
     }
 
     //Prepare the sockaddr_in structure
@@ -160,8 +158,8 @@ int main(int argc , char *argv[]) {
 
     //Bind
     if (bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0) {
-        puts("bind failed");
-        return 1;
+        fprintf(stderr, "bind failed.\n");
+        return -1;
     }
 
     //Listen
@@ -174,7 +172,7 @@ int main(int argc , char *argv[]) {
         new_sock = malloc(1);
         *new_sock = new_socket;
 
-        if (pthread_create( &sniffer_thread , NULL ,  connection_handler , (void*) new_sock) < 0) {
+        if (pthread_create( &sniffer_thread , NULL,  connection_handler, (void*) new_sock) < 0) {
             perror("could not create thread");
             return 1;
         }

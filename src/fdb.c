@@ -21,6 +21,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 
 #include "util.h"
@@ -223,25 +224,25 @@ static int query_callback(void *data, int argc, char **argv, char **azColName) {
             for(i = 0; i + 1 < argc; i = i + 2) {
                 snprintf(buffer, sizeof(buffer), "%s: %s\n", argv[i], argv[i + 1]);
                 if (strnlen(g_buffer, sizeof(g_buffer)) == 0) {
-                    strncpy(g_buffer, buffer, MAX_BUFF_LEN);
+                    strlcpy(g_buffer, buffer, MAX_BUFF_LEN);
                 } else {
-                    strncat(g_buffer, buffer, MAX_BUFF_LEN);
+                    strlcat(g_buffer, buffer, MAX_BUFF_LEN);
                 }
             }
             break;
         case 3:
-            strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
+            strlcpy(g_buffer, argv[0], MAX_BUFF_LEN);
             break;
         case 4:
-            strncpy(g_buffer, argv[0], MAX_BUFF_LEN);
+            strlcpy(g_buffer, argv[0], MAX_BUFF_LEN);
             break;
         case 5:
             for (i = 0; i + 2 < argc; i = i + 3) {
                 snprintf(buffer, sizeof(buffer), "%s: %s: %s\n", argv[i], argv[i + 1], argv[i + 2]);
                 if (strnlen(g_buffer, sizeof(g_buffer)) == 0) {
-                    strncpy(g_buffer, buffer, MAX_BUFF_LEN);
+                    strlcpy(g_buffer, buffer, MAX_BUFF_LEN);
                 } else {
-                    strncat(g_buffer, buffer, MAX_BUFF_LEN);
+                    strlcat(g_buffer, buffer, MAX_BUFF_LEN);
                 }
             }
             break;
@@ -265,7 +266,6 @@ static int query(char *db_name, char *sql_stmt) {
 
     assert(db_name != NULL);
     assert(sql_stmt != NULL);
-
 
     /* Open database */
     if ((rc = sqlite3_open(db_name, &database)) != SQLITE_OK) {
@@ -309,7 +309,7 @@ void get_file(char *id, char *path) {
         return;
     }
 
-    strncpy(path, g_buffer, MAX_BUFF_LEN);
+    strlcpy(path, g_buffer, MAX_BUFF_LEN);
     printf("Get file %s\n", path);
     memset(g_buffer, 0, sizeof(g_buffer));
 
@@ -328,7 +328,7 @@ void get_file_list(char *buffer) {
         return;
     }
 
-    strncpy(buffer, g_buffer, MAX_BUFF_LEN);
+    strlcpy(buffer, g_buffer, MAX_BUFF_LEN);
     printf("%s\n", buffer);
     memset(g_buffer, 0, sizeof(g_buffer));
 
@@ -347,7 +347,7 @@ void get_post(char *buff) {
         return;
     }
 
-    strncpy(buff, g_buffer, MAX_BUFF_LEN);
+    strlcpy(buff, g_buffer, MAX_BUFF_LEN);
     memset(g_buffer, 0, sizeof(g_buffer));
 
     return;
@@ -365,9 +365,9 @@ void show_post(char *id, char *buffer) {
         return;
     }
     if (strlen(g_buffer) == 0) {
-        strncpy(buffer, "Invalid ID", sizeof("Invalid ID"));
+        strlcpy(buffer, "Invalid ID", sizeof("Invalid ID"));
     } else {
-        strncpy(buffer, g_buffer, MAX_BUFF_LEN);
+        strlcpy(buffer, g_buffer, MAX_BUFF_LEN);
     }
     memset(g_buffer, 0, sizeof(g_buffer));
     return;
