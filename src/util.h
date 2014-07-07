@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef __UTIL_H
+#define __UTIL_H
 
 #define FORUM_OK  0XFFFFFE
 #define FORUM_ERR 0XFFFFFF
@@ -15,4 +15,4 @@
 int get_file_content(char *file_name, char *buffer);
 int set_file_content(int size, char *prefix, char *name, char *path, char *content);
 
-#endif /* UTIL_H */
+#endif /* __UTIL_H */
