@@ -24,11 +24,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <syslog.h>
 #include <stddef.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+
 #include "util.h"
 #include "forum.h"
 #include "server.h"
@@ -52,20 +53,22 @@ void usage(void) {
 }
 
 /**
- * To avoid XSS, we just handle text file
+ * Check whether a file is legal, which means the file should be only text file
+ * and also it is not a symlink file.
  */
 static int file_validation(const char *file_name) {
+
+    // Check whether its extension is .txt
     const char* dot = strchr(file_name, '.');
-
     if (!dot || dot == file_name) return FORUM_ERR;
-
     if (strncmp((dot + 1), "txt", strlen("txt")) != 0) {
         fprintf(stderr, "%s\n", "Unsupported file type.");
         return FORUM_ERR;
     }
 
-    if ((access(file_name, F_OK)) == -1) {
-        fprintf(stderr, "%s\n", "File does not exist");
+    // check whether it is a symbolic link file
+    if ((check_symlink(file_name)) != FORUM_OK) {
+        fprintf(stderr, "%s\n", "File is a symbolic link.");
         return FORUM_ERR;
     }
 

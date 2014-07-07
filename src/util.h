@@ -12,6 +12,7 @@
 #define FILE_PREFIX "./upload/"
 #define FILE_NAME_LEN strlen(FILE_PREFIX) + FIELD_ONE_LEN
 
+int check_symlink(const char *file_name);
 int get_file_content(char *file_name, char *buffer);
 int set_file_content(int size, char *prefix, char *name, char *path, char *content);
 

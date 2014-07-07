@@ -25,15 +25,57 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 #include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <pthread.h>
 #include <stddef.h>
 
 #include "util.h"
-#include "server.h"
+
+/* use global variable to record uid and cover it back after file operations.*/
+static uid_t euid, ruid;
+
+/* Restore the effective UID to its original value. */
+void do_setuid(void) {
+    int status = 0;
+#ifdef _POSIX_SAVED_IDS
+    status = seteuid (euid);
+#else
+    status = setreuid (ruid, euid);
+#endif
+
+    if (status < 0) {
+        fprintf(stderr, "Failed to set uid\n");
+        exit(status);
+    }
+    return;
+}
+
+/* Set the effective UID to the real UID. */
+void undo_setuid(void) {
+    int status = 0;
+#ifdef _POSIX_SAVED_IDS
+    status = seteuid (ruid);
+#else
+    status = setreuid (euid, ruid);
+#endif
+    if (status < 0) {
+        fprintf (stderr, "Couldn't set uid.\n");
+        exit (status);
+    }
+    return;
+}
+
+int check_symlink(const char *file_name) {
+    struct stat p_statbuf;
+
+    if (lstat(file_name, &p_statbuf) < 0) {
+        return FORUM_ERR;
+    }
+    if ((S_ISLNK(p_statbuf.st_mode)) == 1) {
+        return FORUM_ERR;
+    }
+
+    return FORUM_OK;
+}
 
 int get_file_content(char *file_name, char *buffer) {
     int ret = 0;
@@ -41,9 +83,19 @@ int get_file_content(char *file_name, char *buffer) {
 
     if (file_name == NULL || buffer == NULL) return FORUM_ERR;
 
-    if ((file = fopen(file_name, "rb")) == NULL) return FORUM_ERR;
+    if ((check_symlink(file_name)) != FORUM_OK) return FORUM_ERR;
 
-    if ((ret = fread(buffer, 1, MAX_BUFF_LEN, file)) < 1) return FORUM_ERR;
+    /* Before file operations, remember the real UID and effective UID*/
+    ruid = getuid ();
+    euid = geteuid ();
+    do_setuid ();
+    if ((file = fopen(file_name, "rb")) == NULL) return FORUM_ERR;
+    undo_setuid();
+
+    if ((ret = fread(buffer, 1, MAX_BUFF_LEN, file)) < 1) {
+        fclose(file);
+        return FORUM_ERR;
+    }
 
     fclose(file);
 
@@ -59,12 +111,15 @@ int set_file_content(int size, char *prefix, char *name, char *path, char *conte
         return FORUM_ERR;
     }
 
+    ruid = getuid ();
+    euid = geteuid ();
+    do_setuid ();
     snprintf(file_name, sizeof(file_name), "%s%s", prefix, name);
-    printf("recv file %s\n", file_name);
     file = fopen(file_name, "wb");
     if (file == NULL) {
         return FORUM_ERR;
     }
+    undo_setuid();
 
     do {
         int written = fwrite(content, 1, size - offset, file);
@@ -76,6 +131,6 @@ int set_file_content(int size, char *prefix, char *name, char *path, char *conte
     } while (offset < size);
 
     fclose(file);
-    strncpy(path, file_name, FILE_NAME_LEN);
+    strlcpy(path, file_name, FILE_NAME_LEN);
     return FORUM_OK;
 }
