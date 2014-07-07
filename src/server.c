@@ -122,7 +122,7 @@ void *connection_handler(void *socket_desc) {
             } else {
                 send(sock, buffer, FIELD_TWO_LEN, 0);
             }
-            free(file_name);
+
             free(buffer);
        }
     }

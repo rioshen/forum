@@ -3,7 +3,7 @@
 
 
 #define MAXRECVLEN 500
-#define PORTNUM 5001
+#define PORTNUM 5000
 
 #define CMD_SIGNUP    "SIGNUP"
 #define CMD_LOGIN     "LOGIN"

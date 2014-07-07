@@ -21,7 +21,78 @@ Here I introduce a simple yet typical usage of secure forum program.
 Use command `signup` to register, user name and password can only contain alphabetics and digits, special characters are not allowed.
 
 ```
+➜  forum git:(master) ✗ ./client
+forum:> signup
+user name:> applicationsec
+password:> applicationsec
+Register success!
+```
 
+#####2. Login.
+Use command `login` to login into the forum, user name and password can only contain alphabetics and digits, special characters are not allowed.
+
+```
+forum:> login
+user name:> applicationsec
+password:> applicationsec
+Login success!
+```
+
+User account that does not exist will prompt like this:
+```
+forum:> login
+user name:> doesnotexist
+password:> doesnotexit
+User name or password is wrong.
+```
+#####3. Create Post.
+Use command 'post' to create a new post. This requires that you are a login user otherwise it will warn you to login.
+```
+forum:> post
+Please login to post new article.
+```
+
+For login users, you can post with title and content.
+```
+forum:> login
+user name:> admin
+password:> admin
+Login success!
+forum:> post
+title:> Application Security
+content:> Application Security Forum
+Create post success!
+```
+
+#####4. Display Post.
+Use command `display` to show all posts, after that you can type in article number to read the content.
+
+```
+forum:> display
+23: application security
+24: Application Security
+Article number:> 24
+Application Security Forum
+forum:>
+```
+
+#####5. Upload Files.
+Use command `upload` to upload a file located in current directory. Only `.txt` file is allowed to protect the XSS attacks.
+```
+forum:> upload
+file name:> default.txt
+Upload file success!
+```
+
+#####6. Download Files.
+Use command `files` to list all files that are stored on server then type in fie number to download it.
+```
+forum:> files
+1: test.txt:
+2: result.txt: ./upload/result.txt
+3: default.txt: ./upload/default.txt
+file number:> 3
+Download file ./download/download.txt success!
 ```
 
 ###Vulnerabilities and Protections

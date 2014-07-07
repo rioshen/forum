@@ -377,7 +377,7 @@ int main(int argc, char**argv) {
             memset(&action, 0, sizeof(action));
             strncpy(action.cmd, CMD_DOWNLOAD, strlen(CMD_DOWNLOAD));
             strncpy(action.field1, command, strnlen(command, COMMAND_LEN));
-            printf("command is %s, number is %s", action.cmd, command);
+
             if ((send(sock, (char *)&action, sizeof(action), 0)) < 0) {
                 fprintf(stderr, "Failed to send action");
                 exit(-1);
