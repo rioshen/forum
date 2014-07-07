@@ -173,7 +173,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get user name.\n");
                 continue;
             }
-            user_name[strlen(user_name) - 1] = '\0';
+            user_name[strnlen(user_name, USER_NAME_LEN) - 1] = '\0';
             if (input_validation(user_name) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -184,7 +184,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get password");
                 continue;
             }
-            password[strlen(password) - 1] = '\0';
+            password[strnlen(password, PASSWORD_LEN) - 1] = '\0';
             if (input_validation(password) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -200,12 +200,12 @@ int main(int argc, char**argv) {
             char user_name[USER_NAME_LEN + 1] = {0};
             char password[PASSWORD_LEN + 1] = {0};
 
-            printf("username:> ");
+            printf("user name:> ");
             if (fgets(user_name, USER_NAME_LEN, stdin) == NULL) {
                 fprintf(stderr, "Failed to get user name.\n");
                 continue;
             }
-            user_name[strlen(user_name) - 1] = '\0';
+            user_name[strnlen(user_name, USER_NAME_LEN) - 1] = '\0';
             if (input_validation(user_name) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
@@ -216,7 +216,7 @@ int main(int argc, char**argv) {
                 fprintf(stderr, "Failed to get password");
                 continue;
             }
-            password[strlen(password) - 1] = '\0';
+            password[strnlen(password, PASSWORD_LEN) - 1] = '\0';
             if (input_validation(password) != FORUM_OK) {
                 fprintf(stderr, "Input data could only contain digit or alpha\n");
                 continue;
