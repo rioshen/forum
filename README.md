@@ -95,6 +95,14 @@ file number:> 3
 Download file ./download/download.txt success!
 ```
 
+#####7. Exit
+Use command `exit` to exit the forum.
+```
+forum:> exit
+
+➜  forum git:(master) ✗
+```
+
 ###Vulnerabilities and Protections
 The purpose of this project is to examine my _Application Security_ mindsets. So here I will demonstrate what I have done to protect my program.
 
